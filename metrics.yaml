@@ -8,7 +8,7 @@ searcher:
    metric: val_f1_accuracy
 resources:
    resource_pool: gpu-pool
-   slots_per_trial: 2
+   slots_per_trial: 1
 environment:
    image: jeffoxenberg/environments:cuda-11.3-pytorch-1.12-tf-2.11-cudf-gpu-6eceaca
    pod_spec:
