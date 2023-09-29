@@ -1,0 +1,29 @@
+name: coreapi_sid_bert_mini_finetune
+description: Fine tune BERT mini for sensitive information detection
+entrypoint:  python sid-minibert-20230424-script.py --training-data /run/determined/workdir/data/sid-sample-training-data.csv --model-dir google/bert_uncased_L-4_H-256_A-4 --tokenizer-hash-filepath /run/determined/workdir/resources/bert-base-uncased-hash.txt --output-file /run/determined/workdir/sid-minibert-model.pt --epochs 50 --checkpoint-every-n-epochs 25
+max_restarts: 0
+searcher:
+   name: single
+   max_length: 1
+   metric: val_f1_accuracy
+resources:
+   resource_pool: gpu-pool
+   slots_per_trial: 2
+environment:
+   image: jeffoxenberg/environments:cuda-11.3-pytorch-1.12-tf-2.11-cudf-gpu-6eceaca
+   pod_spec:
+      spec:
+        containers:
+          - name: determined-container
+            volumeMounts:
+              - name: shared-fs
+                mountPath: /run/determined/workdir/shared_fs
+        volumes:
+          - name: shared-fs
+            persistentVolumeClaim:
+              claimName: mlde-pvc-gpu
+        tolerations:
+            - key: "nvidia.com/gpu"
+              operator: "Equal"
+              value: "present"
+              effect: "NoSchedule"

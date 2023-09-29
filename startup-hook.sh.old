@@ -1,0 +1,11 @@
+export http_proxy=http://web-proxy.houston.hpecorp.net:8080
+export https_proxy=http://web-proxy.houston.hpecorp.net:8080
+export HTTP_PROXY=http://web-proxy.houston.hpecorp.net:8080
+export HTTPS_PROXY=http://web-proxy.houston.hpecorp.net:8080
+python3 -m pip install scikit-learn transformers
+conda install -c conda-forge mamba
+mamba install -c rapidsai -c conda-forge -c nvidia cudf
+unset http_proxy
+unset https_proxy
+unset HTTP_PROXY
+unset HTTPS_PROXY
