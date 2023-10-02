@@ -1,4 +1,5 @@
 import argparse
+import shutil
 import sys
 
 from determined.common.api.errors import NotFoundException
@@ -16,6 +17,7 @@ def get_or_create_model(model: str) -> client.Model:
     """
     try:
         m = client.get_model(model)
+        print('existing model found')
     except NotFoundException as e:
         if args.create:
             print('model not found, creating')
@@ -31,9 +33,13 @@ def run_experiment(config: str) -> Checkpoint:
     :param config: MLDE experiment config yaml
     :return: Checkpoint object representing the top checkpoint for the successfully-run experiment
     """
+    if args.pach:
+        shutil.copytree('/pfs/data', './model/data')
     exp = client.create_experiment(config=config, model_dir='model')  # exp.id
+    print('experiment launched')
     status = exp.wait()
     if status.COMPLETED.value == 'STATE_COMPLETED':
+        print(status.COMPLETED.value)
         best_checkpoint = exp.top_checkpoint()  # best_checkpoint.uuid
     else:
         sys.exit(f'Error: {status.COMPLETED.value}')
@@ -54,8 +60,11 @@ def register_or_return_version(model: client.Model, checkpoint: Checkpoint) -> M
     new_best = checkpoint.training.validation_metrics['avgMetrics']['val_f1_accuracy']
 
     if new_best > existing_best:
+        print('new model is better than old model, saving')
         mv = model.register_version(checkpoint.uuid)
         model.add_metadata({'deployed': False})  # model.metadata['deployed'] to read
+    else:
+        print('new model is worse than old model, discarding')
     return mv
 
 
@@ -77,9 +86,20 @@ if __name__ == '__main__':
     parser.add_argument('--config',
                         required=True,
                         help='Config to launch')
+    parser.add_argument('--pach',
+                        required=False,
+                        action='store_true',
+                        help="Run from pachyderm (copy /pfs data to working directory)")
+    parser.add_argument('--proxy',
+                        required=False,
+                        help='Proxy address if applicable')
     args = parser.parse_args()
 
-    repo = Repo.clone_from(args.repo, 'model')
+    git_config = ''
+    if args.proxy:
+        git_config = f'http.proxy={args.proxy}'
+    shutil.rmtree('model', ignore_errors=True)
+    repo = Repo.clone_from(args.repo, 'model', config=git_config, allow_unsafe_options=True)
 
     client.login(master=args.master, user='determined')
 
